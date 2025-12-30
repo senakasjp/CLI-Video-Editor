@@ -9,9 +9,10 @@ INPUT_DIR="./Out_LUTed"
 FIRST_CLIPS_DIR="./First_clip"
 LAST_CLIPS_DIR="./Last_clip"
 OUTPUT_DIR="./Final_Movie"
+THUMB_DIR="./Thumbnail"
 MUSIC_DIR="./Music"
 FONT_FILE="./Sk-Modernist.ttf"
-mkdir -p "$OUTPUT_DIR"
+mkdir -p "$OUTPUT_DIR" "$THUMB_DIR"
 
 # Load previous settings if file exists
 if [ -f "$CONFIG_FILE" ]; then
@@ -73,12 +74,12 @@ SELECTED_MUSIC="${MUSIC_FILES[$((MUSIC_IDX-1))]}"
 
 # Select First Clip (Intro)
 SELECTED_FIRST_CLIP=""
-FIRST_FILES=("$FIRST_CLIPS_DIR"/*.{mp4,mov,mkv})
+FIRST_FILES=("$FIRST_CLIPS_DIR"/*.{MP4,mp4,mov,mkv})
 if [ ${#FIRST_FILES[@]} -gt 0 ]; then
     echo -e "\n--- Available Intro Clips (First Clip) ---"
     for i in "${!FIRST_FILES[@]}"; do echo "  [$((i+1))] $(basename "${FIRST_FILES[$i]}")"; done
     read -r -p "Select Intro Number (or Enter to skip) [${LAST_FIRST_IDX:-}]: " FIRST_IDX
-    FIRST_IDX=${FIRST_IDX:-${LAST_FIRST_IDX:-}}
+    FIRST_IDX=${FIRST_IDX:-${LAST_FIRST_IDX:-1}}
     if [ -n "$FIRST_IDX" ]; then
         SELECTED_FIRST_CLIP="${FIRST_FILES[$((FIRST_IDX-1))]}"
     fi
@@ -88,8 +89,8 @@ fi
 echo -e "\n--- Available Outro Clips (Last Clip) ---"
 LAST_FILES=("$LAST_CLIPS_DIR"/*.{mp4,mov,mkv})
 for i in "${!LAST_FILES[@]}"; do echo "  [$((i+1))] $(basename "${LAST_FILES[$i]}")"; done
-read -r -p "Select Outro Number [${LAST_LAST_IDX:-}]: " LAST_IDX
-LAST_IDX=${LAST_IDX:-${LAST_LAST_IDX:-}}
+read -r -p "Select Outro Number [${LAST_LAST_IDX:-1}]: " LAST_IDX
+LAST_IDX=${LAST_IDX:-${LAST_LAST_IDX:-1}}
 SELECTED_LAST_CLIP="${LAST_FILES[$((LAST_IDX-1))]}"
 
 # Save all settings to last.config for next run
@@ -115,10 +116,20 @@ THREADS=4
 # ------------------------------------------------------------
 MAIN_FILES=($(find "$INPUT_DIR" -maxdepth 1 -type f \( -iname "*.mp4" -o -iname "*.mov" \) | LC_ALL=C sort))
 
+FILES=()
 if [ -n "$SELECTED_FIRST_CLIP" ]; then
-    FILES=("$SELECTED_FIRST_CLIP" "${MAIN_FILES[@]}" "$SELECTED_LAST_CLIP")
-else
-    FILES=("${MAIN_FILES[@]}" "$SELECTED_LAST_CLIP")
+    FILES+=("$SELECTED_FIRST_CLIP")
+fi
+
+for f in "${MAIN_FILES[@]}"; do
+    FILES+=("$f")
+done
+
+# Index of the very last clip from MAIN_FILES (before outro is added)
+LAST_MAIN_INDEX=$(( ${#FILES[@]} - 1 ))
+
+if [ -n "$SELECTED_LAST_CLIP" ]; then
+    FILES+=("$SELECTED_LAST_CLIP")
 fi
 
 NUM_FILES=${#FILES[@]}
@@ -149,10 +160,13 @@ for i in "${!FILES[@]}"; do
 
     VFILT="$VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL,format=yuv420p"
 
+    # Fade in for the very first clip
     if [[ $i -eq 0 ]]; then
         VFILT="$VFILT,fade=t=in:st=0:d=$FADE_DUR"
     fi
-    if [[ $i -eq $((NUM_FILES - 1)) ]]; then
+    
+    # Fade out for BOTH the last main clip AND the outro clip
+    if [[ $i -eq $LAST_MAIN_INDEX ]] || [[ $i -eq $((NUM_FILES - 1)) ]]; then
         DUR=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$INFILE")
         ST=$(awk -v d="$DUR" -v f="$FADE_DUR" 'BEGIN {printf "%.2f", d-f}')
         VFILT="$VFILT,fade=t=out:st=$ST:d=$FADE_DUR"
@@ -201,6 +215,8 @@ if [[ ! "$CONTINUE_RENDER" =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
+FINAL_VIDEO_PATH="$OUTPUT_DIR/Final_Movie_4K.mp4"
+
 echo "Rendering full video..."
 nice -n 20 ffmpeg -hide_banner -stats -y -threads "$THREADS" \
     -i "$CONCAT_VIDEO" \
@@ -211,6 +227,15 @@ nice -n 20 ffmpeg -hide_banner -stats -y -threads "$THREADS" \
     -c:v h264_videotoolbox -b:v "$BITRATE" \
     -c:a aac -b:a 320k \
     -t "$TOTAL_DUR" \
-    "$OUTPUT_DIR/Final_Movie_4K.mp4"
+    "$FINAL_VIDEO_PATH"
+
+# ------------------------------------------------------------
+# 6. Step 3: Create Thumbnail
+# ------------------------------------------------------------
+echo -e "\nCreating YouTube Thumbnail from 5-second mark..."
+ffmpeg -hide_banner -loglevel error -ss 5 -i "$FINAL_VIDEO_PATH" \
+    -frames:v 1 -q:v 2 "$THUMB_DIR/Thumbnail.jpg" -y
+
+echo "✅ Thumbnail saved to: $THUMB_DIR/Thumbnail.jpg"
 
 exit 0
