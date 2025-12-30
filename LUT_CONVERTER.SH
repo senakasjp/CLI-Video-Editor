@@ -12,9 +12,9 @@ LUT="./lut.cube"
 # 0.0 = No correction
 # 0.1 = Subtle correction
 # 0.2 = Stronger correction (Common for DJI/GoPro)
-CX="0.1"
-CY="0.1"
-CROP_VAL="iw*0.9:ih*0.9"
+CX="0.18"
+CY="0.18"
+CROP_VAL="iw*0.86:ih*0.86"
 
 # Verify LUT exists
 if [ ! -f "$LUT" ]; then
@@ -62,8 +62,8 @@ ls -tr ./clips/*.{mp4,MP4,mov,MOV,mkv,m4v} 2>/dev/null | while read -r file; do
     fi
 
     # --- THERMAL PAUSE ---
-    echo "Pausing for 20 seconds to manage heat..."
-    sleep 20
+    echo "Pausing for 15 seconds to manage heat..."
+    sleep 15
 
 done
 

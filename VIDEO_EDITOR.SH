@@ -20,8 +20,10 @@ if [ -f "$CONFIG_FILE" ]; then
     echo "--- Last Used Settings Found ---"
     echo " Saturation: ${LAST_SAT_VAL:-1.0}"
     echo " Gamma:      ${LAST_GAMMA_VAL:-1.0}"
+    echo " Brightness: ${LAST_BRIGHT_VAL:-0.0}"
     echo " Temp:       ${LAST_TEMP_VAL:-0.0}"
-    echo " Curves:     ${LAST_CURVES_PRESET:-off}"
+    echo " YellowFix:  ${LAST_YELLOW_FIX_LEVEL:-0}"
+    echo " Cinematic:  ${LAST_CINEMATIC_PRESET:-0}"
     echo " Text 1:     ${LAST_TEXT1:-None}"
     echo " Text 2:     ${LAST_TEXT2:-None}"
     echo " Music ID:   ${LAST_MUSIC_IDX:-None}"
@@ -49,20 +51,32 @@ SAT_VAL=${SAT_VAL:-${LAST_SAT_VAL:-1.0}}
 read -r -p "Enter gamma value (0.8-1.4) [${LAST_GAMMA_VAL:-1.0}]: " GAMMA_VAL
 GAMMA_VAL=${GAMMA_VAL:-${LAST_GAMMA_VAL:-1.0}}
 
+# Brightness Guide
+read -r -p "Enter brightness value (-0.2 to 0.2) [${LAST_BRIGHT_VAL:-0.0}]: " BRIGHT_VAL
+BRIGHT_VAL=${BRIGHT_VAL:-${LAST_BRIGHT_VAL:-0.0}}
+
 # Temperature Guide
 echo "TEMP: 0.0 (Neutral), 0.1 (Warm), -0.1 (Cool)"
 read -r -p "Enter temperature adjustment [${LAST_TEMP_VAL:-0.0}]: " TEMP_VAL
 TEMP_VAL=${TEMP_VAL:-${LAST_TEMP_VAL:-0.0}}
 
-# Curves Selection
+# Yellow cast correction (global)
+read -r -p "Yellow cast correction level (0=Off, 1=Low, 2=Med, 3=High) [${LAST_YELLOW_FIX_LEVEL:-0}]: " YELLOW_FIX_LEVEL
+YELLOW_FIX_LEVEL=${YELLOW_FIX_LEVEL:-${LAST_YELLOW_FIX_LEVEL:-0}}
+
+# Cinematic filter selection (global)
 echo ""
-echo "CURVES presets:"
+echo "CINEMATIC presets:"
 echo "  0) Off"
-echo "  1) Cool (reduce yellow cast)"
-echo "  2) Warm (add warmth)"
-echo "  3) Contrast punch (slight S-curve)"
-read -r -p "Select Curves preset [${LAST_CURVES_PRESET:-0}]: " CURVES_PRESET
-CURVES_PRESET=${CURVES_PRESET:-${LAST_CURVES_PRESET:-0}}
+echo "  1) Blockbuster (teal/orange punch)"
+echo "  2) Vintage Camo (muted greens)"
+echo "  3) Film Warm (soft warm)"
+echo "  4) Bleach Bypass (desaturated, contrasty)"
+echo "  5) Sepia (classic warm brown)"
+echo "  6) Sci‑Fi (cool, metallic)"
+echo "  7) Black & White (iMovie‑style)"
+read -r -p "Select Cinematic preset [${LAST_CINEMATIC_PRESET:-0}]: " CINEMATIC_PRESET
+CINEMATIC_PRESET=${CINEMATIC_PRESET:-${LAST_CINEMATIC_PRESET:-0}}
 
 # Text Selection
 echo ""
@@ -116,8 +130,10 @@ SELECTED_LAST_CLIP="${LAST_FILES[$((LAST_IDX-1))]}"
 cat <<EOF > "$CONFIG_FILE"
 LAST_SAT_VAL="$SAT_VAL"
 LAST_GAMMA_VAL="$GAMMA_VAL"
+LAST_BRIGHT_VAL="$BRIGHT_VAL"
 LAST_TEMP_VAL="$TEMP_VAL"
-LAST_CURVES_PRESET="$CURVES_PRESET"
+LAST_YELLOW_FIX_LEVEL="$YELLOW_FIX_LEVEL"
+LAST_CINEMATIC_PRESET="$CINEMATIC_PRESET"
 LAST_TEXT1="$TEXT_LINE1"
 LAST_TEXT2="$TEXT_LINE2"
 LAST_MUSIC_IDX="$MUSIC_IDX"
@@ -158,42 +174,6 @@ TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 CONCAT_LIST="$TMPDIR/concat.txt"
 
-# Analyse a clip quickly to decide which curve preset to apply (robust: text stats)
-analyze_clip_type() {
-    local file="$1"
-
-    # Sample a few frames, downscale for speed, then compute signal stats.
-    # We'll classify:
-    #  - DARK if YAVG is low
-    #  - GREEN_DOM if G is notably higher than R and B
-    local stats
-    stats=$(ffmpeg -nostdin -hide_banner -loglevel info -i "$file" \
-        -vf "fps=1,scale=320:180,signalstats" -frames:v 5 -f null - 2>&1 || true)
-
-    # Extract last seen averages from signalstats lines
-    local y r g b
-    y=$(printf "%s\n" "$stats" | awk -F'YAVG:' '/YAVG:/ {split($2,a," "); y=a[1]} END{print y+0}')
-    r=$(printf "%s\n" "$stats" | awk -F'RAVG:' '/RAVG:/ {split($2,a," "); r=a[1]} END{print r+0}')
-    g=$(printf "%s\n" "$stats" | awk -F'GAVG:' '/GAVG:/ {split($2,a," "); g=a[1]} END{print g+0}')
-    b=$(printf "%s\n" "$stats" | awk -F'BAVG:' '/BAVG:/ {split($2,a," "); b=a[1]} END{print b+0}')
-
-    # Heuristics (8-bit scale 0-255)
-    if awk -v y="$y" 'BEGIN{exit !(y>0 && y<85)}'; then
-        echo "DARK"
-        return
-    fi
-
-    # green dominance: G higher than mean(R,B) by margin, and B not keeping up
-    if awk -v r="$r" -v g="$g" -v b="$b" 'BEGIN{
-        m=(r+b)/2;
-        exit !(g > (m+10) && b < (g-8));
-    }'; then
-        echo "GREEN_DOM"
-        return
-    fi
-
-    echo "NORMAL"
-}
 
 escape_drawtext() {
     local s="$1"
@@ -202,6 +182,35 @@ escape_drawtext() {
     s=${s//,/\\,}
     s=${s//%/\\%}
     printf "%s" "$s"
+}
+
+cinematic_filter() {
+    case "$CINEMATIC_PRESET" in
+        1)
+            echo ",colorbalance=rs=0.06:gs=-0.04:bs=-0.10:rm=0.04:bm=-0.05,eq=contrast=1.25:saturation=1.28,curves=all='0/0 0.22/0.15 0.5/0.55 0.78/0.88 1/1',unsharp=9:9:1.2:7:7:0.8,vignette=0.45"
+            ;;
+        2)
+            echo ",colorbalance=rs=-0.02:gs=0.04:bs=-0.03:rm=-0.02:gm=0.04:bm=-0.03,eq=contrast=0.90:saturation=0.70,unsharp=5:5:0.6:5:5:0.4,vignette=0.45"
+            ;;
+        3)
+            echo ",colorbalance=rs=0.04:gs=0.02:bs=-0.04:rm=0.03:gm=0.02:bm=-0.03,eq=contrast=1.08:saturation=1.18"
+            ;;
+        4)
+            echo ",hue=s=0.30,eq=contrast=1.22:brightness=-0.03,unsharp=7:7:0.7"
+            ;;
+        5)
+            echo ",colorbalance=rs=0.07:gs=0.03:bs=-0.08:rm=0.06:gm=0.03:bm=-0.07,eq=contrast=1.10:saturation=0.80"
+            ;;
+        6)
+            echo ",colorbalance=rs=-0.03:gs=0.00:bs=0.07:rm=-0.03:gm=0.00:bm=0.06,eq=contrast=1.20:saturation=0.80,unsharp=7:7:0.8"
+            ;;
+        7)
+            echo ",hue=s=0,eq=contrast=1.22:brightness=0.02,curves=all='0/0 0.2/0.12 0.5/0.52 0.8/0.9 1/1'"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
 }
 
 # ------------------------------------------------------------
@@ -220,55 +229,15 @@ if [ "$TEMP_VAL" != "0.0" ] && [ "$TEMP_VAL" != "0" ]; then
     B_MAX=$(awk -v t="$TEMP_VAL" 'BEGIN { val = (t > 0 ? 1.0 - t : 1.0); printf "%.3f", (val > 1.0 ? 1.0 : (val < 0 ? 0 : val)) }')
     PREVIEW_VFILT="$PREVIEW_VFILT,colorlevels=romax=$R_MAX:bomax=$B_MAX"
 fi
+case "$YELLOW_FIX_LEVEL" in
+    1) PREVIEW_VFILT="$PREVIEW_VFILT,colorbalance=rm=-0.03:gm=-0.03:bm=0.03" ;;
+    2) PREVIEW_VFILT="$PREVIEW_VFILT,colorbalance=rm=-0.06:gm=-0.06:bm=0.06" ;;
+    3) PREVIEW_VFILT="$PREVIEW_VFILT,colorbalance=rm=-0.10:gm=-0.10:bm=0.10" ;;
+    *) ;;
+esac
 
-CLIP_TYPE=$(analyze_clip_type "$SAMPLE_SOURCE")
-if [ "${CURVES_PRESET}" = "0" ] || [ "${CURVES_PRESET}" = "off" ]; then
-    :
-else
-    case "$CLIP_TYPE" in
-        GREEN_DOM)
-            PREVIEW_VFILT="$PREVIEW_VFILT,\
-curves=r='0/0 0.5/0.49 1/1':\
-g='0/0 0.5/0.50 1/1':\
-b='0/0 0.5/0.48 1/1',\
-hue=h=0:s=0.93"
-            ;;
-        DARK)
-            PREVIEW_VFILT="$PREVIEW_VFILT,\
-curves=all='0/0 0.35/0.40 0.7/0.72 1/1',\
-hue=h=0:s=0.98"
-            ;;
-        NORMAL|*)
-            case "${CURVES_PRESET}" in
-                1)
-                    PREVIEW_VFILT="$PREVIEW_VFILT,\
-curves=r='0/0 0.5/0.48 1/1':\
-g='0/0 0.5/0.44 1/1':\
-b='0/0 0.5/0.54 1/1',\
-hue=h=0:s=0.95"
-                    ;;
-                2)
-                    PREVIEW_VFILT="$PREVIEW_VFILT,\
-curves=r='0/0 0.5/0.54 1/1':\
-g='0/0 0.5/0.50 1/1':\
-b='0/0 0.5/0.46 1/1',\
-hue=h=0:s=1.02"
-                    ;;
-                3)
-                    PREVIEW_VFILT="$PREVIEW_VFILT,\
-curves=all='0/0 0.25/0.18 0.5/0.52 0.75/0.85 1/1',\
-hue=h=0:s=0.95,\
-eq=contrast=1.05:brightness=-0.02"
-                    ;;
-                *)
-                    : # Off
-                    ;;
-            esac
-            ;;
-    esac
-fi
-
-PREVIEW_VFILT="$PREVIEW_VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL,format=yuv420p"
+PREVIEW_VFILT="$PREVIEW_VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p"
+PREVIEW_VFILT="$PREVIEW_VFILT$(cinematic_filter)"
 PREVIEW_V_FILTER="[0:v]${PREVIEW_VFILT},drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=white:fontsize=160:x=150:y=H-450:borderw=2:bordercolor=black@0.3:shadowcolor=black@0.6:shadowx=3:shadowy=3:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=white@0.95:fontsize=100:x=150:y=H-270:borderw=1:bordercolor=black@0.3:shadowcolor=black@0.3:shadowx=2:shadowy=2:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
 PREVIEW_A_FILTER="[1:a]afade=t=in:st=0:d=$FADE_DUR,afade=t=out:st=$PREVIEW_FADE_OUT_ST:d=$FADE_DUR[aout]"
 
@@ -309,59 +278,15 @@ for i in "${!FILES[@]}"; do
         B_MAX=$(awk -v t="$TEMP_VAL" 'BEGIN { val = (t > 0 ? 1.0 - t : 1.0); printf "%.3f", (val > 1.0 ? 1.0 : (val < 0 ? 0 : val)) }')
         VFILT="$VFILT,colorlevels=romax=$R_MAX:bomax=$B_MAX"
     fi
+    case "$YELLOW_FIX_LEVEL" in
+        1) VFILT="$VFILT,colorbalance=rm=-0.03:gm=-0.03:bm=0.03" ;;
+        2) VFILT="$VFILT,colorbalance=rm=-0.06:gm=-0.06:bm=0.06" ;;
+        3) VFILT="$VFILT,colorbalance=rm=-0.10:gm=-0.10:bm=0.10" ;;
+        *) ;;
+    esac
 
-    # Curves preset application (improved color control) - auto per clip
-    CLIP_TYPE=$(analyze_clip_type "$INFILE")
-
-    # If user chose Off (0), keep Off for all clips
-    if [ "${CURVES_PRESET}" = "0" ] || [ "${CURVES_PRESET}" = "off" ]; then
-        :
-    else
-        case "$CLIP_TYPE" in
-            GREEN_DOM)
-                VFILT="$VFILT,\
-curves=r='0/0 0.5/0.49 1/1':\
-g='0/0 0.5/0.50 1/1':\
-b='0/0 0.5/0.48 1/1',\
-hue=h=0:s=0.93"
-
-                ;;
-            DARK)
-                VFILT="$VFILT,\
-curves=all='0/0 0.35/0.40 0.7/0.72 1/1',\
-hue=h=0:s=0.98"
-                ;;
-            NORMAL|*)
-                case "${CURVES_PRESET}" in
-                    1)
-                        VFILT="$VFILT,\
-curves=r='0/0 0.5/0.48 1/1':\
-g='0/0 0.5/0.44 1/1':\
-b='0/0 0.5/0.54 1/1',\
-hue=h=0:s=0.95"
-                        ;;
-                    2)
-                        VFILT="$VFILT,\
-curves=r='0/0 0.5/0.54 1/1':\
-g='0/0 0.5/0.50 1/1':\
-b='0/0 0.5/0.46 1/1',\
-hue=h=0:s=1.02"
-                        ;;
-                    3)
-                        VFILT="$VFILT,\
-curves=all='0/0 0.25/0.18 0.5/0.52 0.75/0.85 1/1',\
-hue=h=0:s=0.95,\
-eq=contrast=1.05:brightness=-0.02"
-                        ;;
-                    *)
-                        : # Off
-                        ;;
-                esac
-                ;;
-        esac
-    fi
-
-    VFILT="$VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL,format=yuv420p"
+    VFILT="$VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p"
+    VFILT="$VFILT$(cinematic_filter)"
 
     if [[ $i -eq 0 ]]; then
         VFILT="$VFILT,fade=t=in:st=0:d=$FADE_DUR"
