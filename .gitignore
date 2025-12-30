@@ -1,0 +1,15 @@
+# Ignore everything by default
+*
+
+# Allow all root-level files
+!/*
+
+# Allow all directories (so Git can descend into them)
+!*/
+
+# Ignore contents of all directories
+/*/*
+
+# Allow Last_clip directory and its contents
+!Last_clip/
+!Last_clip/**
