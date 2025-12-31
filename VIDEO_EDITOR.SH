@@ -236,7 +236,7 @@ case "$YELLOW_FIX_LEVEL" in
     *) ;;
 esac
 
-PREVIEW_VFILT="$PREVIEW_VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p"
+PREVIEW_VFILT="$PREVIEW_VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p10le"
 PREVIEW_VFILT="$PREVIEW_VFILT$(cinematic_filter)"
 PREVIEW_V_FILTER="[0:v]${PREVIEW_VFILT},drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=white:fontsize=160:x=150:y=H-450:borderw=2:bordercolor=black@0.3:shadowcolor=black@0.6:shadowx=3:shadowy=3:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=white@0.95:fontsize=100:x=150:y=H-270:borderw=1:bordercolor=black@0.3:shadowcolor=black@0.3:shadowx=2:shadowy=2:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
 PREVIEW_A_FILTER="[1:a]afade=t=in:st=0:d=$FADE_DUR,afade=t=out:st=$PREVIEW_FADE_OUT_ST:d=$FADE_DUR[aout]"
@@ -248,7 +248,7 @@ nice -n 20 ffmpeg -hide_banner -loglevel error -y -threads "$THREADS" \
     -filter_complex "$PREVIEW_V_FILTER;$PREVIEW_A_FILTER" \
     -map "[vout]" -map "[aout]" \
     -shortest \
-    -c:v h264_videotoolbox -b:v "$BITRATE" \
+    -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart \
     -c:a aac -t "$PREVIEW_DUR" \
     "$OUTPUT_DIR/SAMPLE_PREVIEW.mp4"
 
@@ -285,7 +285,7 @@ for i in "${!FILES[@]}"; do
         *) ;;
     esac
 
-    VFILT="$VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p"
+    VFILT="$VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p10le"
     VFILT="$VFILT$(cinematic_filter)"
 
     if [[ $i -eq 0 ]]; then
@@ -299,7 +299,7 @@ for i in "${!FILES[@]}"; do
     fi
 
     nice -n 20 ffmpeg -nostdin -hide_banner -loglevel error -threads "$THREADS" -i "$INFILE" \
-        -an -vf "$VFILT" -c:v h264_videotoolbox -b:v "$BITRATE" "$OUTCLIP" -y
+        -an -vf "$VFILT" -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart "$OUTCLIP" -y
     
     printf "file '%s'\n" "$OUTCLIP" >> "$CONCAT_LIST"
 done
@@ -330,7 +330,7 @@ nice -n 20 ffmpeg -hide_banner -stats -y -threads "$THREADS" \
     -filter_complex "$V_FILTER;$A_FILTER" \
     -map "[vout]" -map "[aout]" \
     -shortest \
-    -c:v h264_videotoolbox -b:v "$BITRATE" \
+    -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart \
     -c:a aac -b:a 320k \
     -t "$TOTAL_DUR" \
     "$FINAL_VIDEO_PATH"

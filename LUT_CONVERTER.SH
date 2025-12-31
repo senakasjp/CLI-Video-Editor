@@ -48,8 +48,8 @@ ls -tr ./clips/*.{mp4,MP4,mov,MOV,mkv,m4v} 2>/dev/null | while read -r file; do
         # 4. lut3d: Apply your color grade
         # 5. format: Ensure compatibility with standard players
         nice -n 20 ffmpeg -y -nostdin -i "$file" \
-        -vf "lenscorrection=cx=$CX:cy=$CY,crop=$CROP_VAL,normalize=smoothing=30:independence=0,lut3d=file='$LUT':interp=tetrahedral,format=yuv420p" \
-        -map_metadata 0 -c:v h264_videotoolbox -b:v 15M -c:a copy -f mp4 "$temp_file_once"
+        -vf "lenscorrection=cx=$CX:cy=$CY,crop=$CROP_VAL,normalize=smoothing=30:independence=0,lut3d=file='$LUT':interp=tetrahedral,format=yuv420p10le" \
+        -map_metadata 0 -c:v hevc_videotoolbox -b:v 15M -tag:v hvc1 -movflags +faststart -c:a copy -f mp4 "$temp_file_once"
         
         if [ $? -eq 0 ]; then
             mv "$temp_file_once" "$out_once"

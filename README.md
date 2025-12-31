@@ -1,6 +1,6 @@
 # Video Editing Pipeline (LUT + Assembly)
 
-This folder contains a two‑step Bash workflow for preparing clips and assembling a 4K cinematic edit. Run the LUT pass first, then the editor/assembler.
+This folder contains a two-step Bash workflow for preparing clips and assembling a 4K cinematic edit. Run the LUT pass first, then the editor/assembler.
 
 ## Scripts
 
@@ -11,7 +11,8 @@ Key behavior:
 - Skips clips shorter than 5 seconds.
 - Uses `lenscorrection` + `crop` to reduce fisheye distortion.
 - Normalizes exposure before applying `lut.cube`.
-- Outputs H.264 via `h264_videotoolbox` at ~15 Mbps.
+- Outputs 10-bit HEVC via `hevc_videotoolbox` at ~15 Mbps.
+- Sets `-tag:v hvc1` and `-movflags +faststart` for better player compatibility.
 - Pauses 15 seconds between clips to reduce thermal load.
 
 Inputs:
@@ -30,7 +31,8 @@ Key behavior:
 - Applies global controls: saturation, gamma, brightness, temperature, yellow cast fix.
 - Optional cinematic presets (teal/orange, vintage, sepia, B&W, etc.).
 - Generates a 5‑second preview before full render.
-- Outputs a 4K final movie and a YouTube‑style thumbnail.
+- Outputs 10-bit HEVC (preview, intermediates, and final) with QuickTime-friendly tags.
+- Outputs a 4K final movie and a YouTube-style thumbnail.
 
 Inputs:
 - `./Out_LUTed` (main clips after LUT pass)
@@ -60,11 +62,15 @@ Outputs:
 
 - `ffmpeg` and `ffprobe`
 - `bc` (used for timing/math)
-- Apple Silicon recommended for `h264_videotoolbox` acceleration
+- Apple Silicon recommended for `hevc_videotoolbox` acceleration
+
+## Workflow Notes
+
+- This pipeline keeps 10-bit precision through LUT conversion and final assembly.
+- Outputs are HEVC in MP4 with `hvc1` tags; QuickTime is more likely to open them without warnings.
 
 ## Configuration Notes
 
 - `last.config` stores the previous run’s settings (color, text, music, intro/outro selection).
 - `VIDEO_EDITOR.SH` targets 3840x2160, 30 fps, and ~60 Mbps.
 - Text overlays are drawn near the bottom-left with a simple fade-in/out alpha ramp.
-
