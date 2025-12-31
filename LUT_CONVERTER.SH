@@ -34,6 +34,13 @@ ls -tr ./clips/*.{mp4,MP4,mov,MOV,mkv,m4v} 2>/dev/null | while read -r file; do
         echo "SKIPPING: $filename (Too short: ${duration}s)"
         continue
     fi
+    if (( $(echo "$duration > 20" | bc -l) )); then
+        read -r -p "PROMPT: $filename is ${duration}s. Process? (y/N): " confirm
+        case "$confirm" in
+            [yY]) ;;
+            *) echo "SKIPPING: $filename (User declined)"; continue ;;
+        esac
+    fi
 
     out_once="./Out_LUTed/$filename"
     temp_file_once="./Out_LUTed/$filename.tmp"

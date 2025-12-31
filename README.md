@@ -1,6 +1,6 @@
 # Video Editing Pipeline (LUT + Assembly)
 
-This folder contains a two-step Bash workflow for preparing clips and assembling a 4K cinematic edit. Run the LUT pass first, then the editor/assembler.
+This folder contains a two-step Bash workflow for preparing camera clips and assembling a 4K cinematic edit. The first script batch-processes footage with lens correction, normalization, and a LUT using FFmpeg. The second script assembles the graded clips into a final movie with titles, music, and optional looks. Run the LUT pass first, then the editor/assembler.
 
 ## Scripts
 
@@ -9,6 +9,7 @@ Applies lens correction, normalization, and a 3D LUT to all clips in `./clips`, 
 
 Key behavior:
 - Skips clips shorter than 5 seconds.
+- Prompts for approval when a clip is longer than 20 seconds.
 - Uses `lenscorrection` + `crop` to reduce fisheye distortion.
 - Normalizes exposure before applying `lut.cube`.
 - Outputs 10-bit HEVC via `hevc_videotoolbox` at ~15 Mbps.
@@ -60,13 +61,13 @@ Outputs:
 
 ## Requirements
 
-- `ffmpeg` and `ffprobe`
-- `bc` (used for timing/math)
-- Apple Silicon recommended for `hevc_videotoolbox` acceleration
+- `ffmpeg` and `ffprobe` (video processing, LUTs, scaling, titles, audio mix)
+- `bc` (duration math and conditional checks)
+- Apple Silicon recommended for `hevc_videotoolbox` hardware encoding
 
 ## Workflow Notes
 
-- This pipeline keeps 10-bit precision through LUT conversion and final assembly.
+- This pipeline keeps 10-bit precision through LUT conversion and final assembly to minimize banding.
 - Outputs are HEVC in MP4 with `hvc1` tags; QuickTime is more likely to open them without warnings.
 
 ## Configuration Notes
