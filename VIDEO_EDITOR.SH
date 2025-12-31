@@ -250,8 +250,8 @@ LINE1_ASC_PCT=70
 LINE2_DESC_PCT=25
 BOX_PAD_X=24
 BOX_PAD_Y=12
-PAD_BEFORE_FADE=100
-FADE_W=200
+PAD_BEFORE_FADE=200
+FADE_W=300
 
 TEXT1_LEN=${#TEXT_LINE1}
 TEXT2_LEN=${#TEXT_LINE2}
@@ -283,7 +283,7 @@ BOX_H=$((BOX_TOP_OFFSET - BOX_BOTTOM_OFFSET))
 BOX_Y_EXPR="ih-$BOX_TOP_OFFSET"
 
 BOX_W_MAIN=$((BOX_W - FADE_W))
-FADE_STEP=20
+FADE_STEP=30
 FADE_X0=$((BOX_X + BOX_W_MAIN))
 FADE_X1=$((FADE_X0 + FADE_STEP))
 FADE_X2=$((FADE_X1 + FADE_STEP))
@@ -313,7 +313,7 @@ esac
 
 PREVIEW_VFILT="$PREVIEW_VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p10le"
 PREVIEW_VFILT="$PREVIEW_VFILT$(cinematic_filter)"
-PREVIEW_V_FILTER="[0:v]${PREVIEW_VFILT},drawbox=x=${BOX_X}:y=${BOX_Y_EXPR}:w=${BOX_W_MAIN}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X0}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X1}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.54:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X2}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.48:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X3}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.42:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X4}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.36:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X5}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.30:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X6}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.24:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X7}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.18:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X8}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.12:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X9}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.06:t=fill:enable='${BOX_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=black:fontsize=${LINE1_SIZE}:x=${LINE1_X}:y=H-${TEXT_LINE1_BASELINE_OFFSET}:borderw=3:bordercolor=black@0.3:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=black@0.95:fontsize=${LINE2_SIZE}:x=${LINE2_X}:y=H-${TEXT_LINE2_BASELINE_OFFSET}:borderw=2:bordercolor=black@0.3:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
+PREVIEW_V_FILTER="[0:v]${PREVIEW_VFILT},drawbox=x=${BOX_X}:y=${BOX_Y_EXPR}:w=${BOX_W_MAIN}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X0}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X1}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.54:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X2}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.48:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X3}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.42:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X4}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.36:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X5}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.30:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X6}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.24:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X7}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.18:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X8}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.12:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X9}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.06:t=fill:enable='${BOX_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=black:fontsize=${LINE1_SIZE}:x=${LINE1_X}:y=H-${TEXT_LINE1_BASELINE_OFFSET}:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=black@0.95:fontsize=${LINE2_SIZE}:x=${LINE2_X}:y=H-${TEXT_LINE2_BASELINE_OFFSET}:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
 PREVIEW_A_FILTER="[1:a]afade=t=in:st=0:d=$FADE_DUR,afade=t=out:st=$PREVIEW_FADE_OUT_ST:d=$FADE_DUR[aout]"
 
 echo "Generating 5-second sample clip..."
@@ -392,7 +392,7 @@ TOTAL_DUR=$(ffprobe -v error -show_entries format=duration -of default=noprint_w
 FADE_OUT_ST=$(awk -v d="$TOTAL_DUR" -v f="$FADE_DUR" 'BEGIN {printf "%.2f", d-f}')
 
 # Build V_FILTER - construct step by step to avoid quoting issues
-V_FILTER="[0:v]drawbox=x=${BOX_X}:y=${BOX_Y_EXPR}:w=${BOX_W_MAIN}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X0}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X1}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.54:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X2}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.48:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X3}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.42:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X4}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.36:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X5}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.30:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X6}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.24:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X7}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.18:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X8}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.12:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X9}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.06:t=fill:enable='${BOX_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=black:fontsize=${LINE1_SIZE}:x=${LINE1_X}:y=H-${TEXT_LINE1_BASELINE_OFFSET}:borderw=3:bordercolor=black@0.3:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=black@0.95:fontsize=${LINE2_SIZE}:x=${LINE2_X}:y=H-${TEXT_LINE2_BASELINE_OFFSET}:borderw=2:bordercolor=black@0.3:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
+V_FILTER="[0:v]drawbox=x=${BOX_X}:y=${BOX_Y_EXPR}:w=${BOX_W_MAIN}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X0}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X1}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.54:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X2}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.48:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X3}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.42:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X4}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.36:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X5}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.30:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X6}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.24:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X7}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.18:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X8}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.12:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X9}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.06:t=fill:enable='${BOX_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=black:fontsize=${LINE1_SIZE}:x=${LINE1_X}:y=H-${TEXT_LINE1_BASELINE_OFFSET}:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=black@0.95:fontsize=${LINE2_SIZE}:x=${LINE2_X}:y=H-${TEXT_LINE2_BASELINE_OFFSET}:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
 
 A_FILTER="[1:a]afade=t=in:st=0:d=$FADE_DUR,afade=t=out:st=$FADE_OUT_ST:d=$FADE_DUR[aout]"
 
