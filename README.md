@@ -1,0 +1,70 @@
+# Video Editing Pipeline (LUT + Assembly)
+
+This folder contains a two‑step Bash workflow for preparing clips and assembling a 4K cinematic edit. Run the LUT pass first, then the editor/assembler.
+
+## Scripts
+
+### `LUT_CONVERTER.SH`
+Applies lens correction, normalization, and a 3D LUT to all clips in `./clips`, then writes processed files into `./Out_LUTed`.
+
+Key behavior:
+- Skips clips shorter than 5 seconds.
+- Uses `lenscorrection` + `crop` to reduce fisheye distortion.
+- Normalizes exposure before applying `lut.cube`.
+- Outputs H.264 via `h264_videotoolbox` at ~15 Mbps.
+- Pauses 15 seconds between clips to reduce thermal load.
+
+Inputs:
+- `./clips` (source video files)
+- `./lut.cube` (3D LUT file)
+
+Outputs:
+- `./Out_LUTed` (processed clips, same filenames)
+
+### `VIDEO_EDITOR.SH`
+Interactive assembler that trims/scales clips to 4K, applies global look adjustments, adds titles, mixes music, and renders the final movie plus a thumbnail.
+
+Key behavior:
+- Reads/writes `last.config` for persistent settings.
+- Lets you select intro/outro clips and a music track.
+- Applies global controls: saturation, gamma, brightness, temperature, yellow cast fix.
+- Optional cinematic presets (teal/orange, vintage, sepia, B&W, etc.).
+- Generates a 5‑second preview before full render.
+- Outputs a 4K final movie and a YouTube‑style thumbnail.
+
+Inputs:
+- `./Out_LUTed` (main clips after LUT pass)
+- `./First_clip` (optional intro clips)
+- `./Last_clip` (optional outro clips)
+- `./Music` (audio tracks)
+- `./Sk-Modernist.ttf` (title font)
+
+Outputs:
+- `./Final_Movie/Final_Movie_4K.mp4`
+- `./Final_Movie/SAMPLE_PREVIEW.mp4`
+- `./Thumbnail/Thumbnail.jpg`
+
+## Quick Start
+
+1) Prepare clips + LUT
+```bash
+./LUT_CONVERTER.SH
+```
+
+2) Assemble the final movie
+```bash
+./VIDEO_EDITOR.SH
+```
+
+## Requirements
+
+- `ffmpeg` and `ffprobe`
+- `bc` (used for timing/math)
+- Apple Silicon recommended for `h264_videotoolbox` acceleration
+
+## Configuration Notes
+
+- `last.config` stores the previous run’s settings (color, text, music, intro/outro selection).
+- `VIDEO_EDITOR.SH` targets 3840x2160, 30 fps, and ~60 Mbps.
+- Text overlays are drawn near the bottom-left with a simple fade-in/out alpha ramp.
+
