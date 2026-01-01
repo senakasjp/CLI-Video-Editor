@@ -12,6 +12,7 @@ OUTPUT_DIR="./Final_Movie"
 THUMB_DIR="./Thumbnail"
 MUSIC_DIR="./Music"
 FONT_FILE="./Sk-Modernist.ttf"
+PROCESS_DELAY_SEC="5"
 mkdir -p "$OUTPUT_DIR" "$THUMB_DIR"
 
 # Load previous settings if file exists
@@ -377,6 +378,7 @@ for i in "${!FILES[@]}"; do
         -an -vf "$VFILT" -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart "$OUTCLIP" -y
     
     printf "file '%s'\n" "$OUTCLIP" >> "$CONCAT_LIST"
+    sleep "$PROCESS_DELAY_SEC"
 done
 
 # ------------------------------------------------------------
