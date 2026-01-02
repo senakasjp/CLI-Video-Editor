@@ -44,7 +44,9 @@ Inputs:
 
 Outputs:
 - `./Final_Movie/Final_Movie_4K.mp4`
-- `./Final_Movie/SAMPLE_PREVIEW.mp4`
+- `./Final_Movie/SAMPLE_PREVIEW_01.mp4` .. `SAMPLE_PREVIEW_04.mp4`
+- `./Final_Movie/SAMPLE_PREVIEW_GRID.mp4` (2x2 comparison when 4 previews exist)
+- `./Final_Movie/SAMPLE_PREVIEW_ALL.mp4` (concat if fewer than 4 previews)
 - `./Thumbnail/Thumbnail.jpg`
 
 ## Quick Start
@@ -69,9 +71,11 @@ Outputs:
 
 - This pipeline keeps 10-bit precision through LUT conversion and final assembly to minimize banding.
 - Outputs are HEVC in MP4 with `hvc1` tags; QuickTime is more likely to open them without warnings.
+- `VIDEO_EDITOR.SH` caches preprocessed clips in `./.cache_preprocessed` and reuses them when settings and source clips are unchanged.
 
 ## Configuration Notes
 
 - `last.config` stores the previous run’s settings (color, text, music, intro/outro selection).
 - `VIDEO_EDITOR.SH` targets 3840x2160, 30 fps, and ~60 Mbps.
 - Text overlays are drawn near the bottom-left with a simple fade-in/out alpha ramp.
+- Final render applies text only to the first clip; preview text/boxes are only on the first sample.

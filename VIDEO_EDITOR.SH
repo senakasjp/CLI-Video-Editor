@@ -168,6 +168,7 @@ THREADS=4
 # ------------------------------------------------------------
 CACHE_DIR="./.cache_preprocessed"
 mkdir -p "$CACHE_DIR"
+CACHE_DIR_ABS="$(cd "$CACHE_DIR" && pwd)"
 
 SETTINGS_STR="w=$TARGET_W,h=$TARGET_H,temp=$TEMP_VAL,yellow=$YELLOW_FIX_LEVEL,sat=$SAT_VAL,gamma=$GAMMA_VAL,bright=$BRIGHT_VAL,cinematic=$CINEMATIC_PRESET,fade=$FADE_DUR,bitrate=$BITRATE"
 SETTINGS_HASH=$(printf "%s" "$SETTINGS_STR" | shasum -a 256 | awk '{print $1}')
@@ -487,7 +488,7 @@ for i in "${!FILES[@]}"; do
             -an -vf "$VFILT" -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart "$OUTCLIP" -y
     fi
     
-    printf "file '%s'\n" "$OUTCLIP" >> "$CONCAT_LIST"
+    printf "file '%s'\n" "$CACHE_DIR_ABS/$(basename "$OUTCLIP")" >> "$CONCAT_LIST"
     sleep "$PROCESS_DELAY_SEC"
 done
 
