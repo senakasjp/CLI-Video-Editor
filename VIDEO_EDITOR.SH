@@ -14,6 +14,7 @@ MUSIC_DIR="./Music"
 FONT_FILE="./Sk-Modernist.ttf"
 PROCESS_DELAY_SEC="5"
 mkdir -p "$OUTPUT_DIR" "$THUMB_DIR"
+OUTPUT_DIR_ABS="$(cd "$OUTPUT_DIR" && pwd)"
 
 # Load previous settings if file exists
 if [ -f "$CONFIG_FILE" ]; then
@@ -44,17 +45,31 @@ fi
 
 echo "⚠️  Just enter to keep last used values."
 
+# Basic numeric validation to avoid broken filter strings.
+is_number() {
+    [[ "$1" =~ ^-?[0-9]+([.][0-9]+)?$ ]]
+}
+
 # Saturation Guide
 read -r -p "Enter saturation value (0.8-2) [${LAST_SAT_VAL:-1.0}]: " SAT_VAL
 SAT_VAL=${SAT_VAL:-${LAST_SAT_VAL:-1.0}}
+if ! is_number "$SAT_VAL"; then
+    SAT_VAL="1.0"
+fi
 
 # Gamma Guide
 read -r -p "Enter gamma value (0.8-1.4) [${LAST_GAMMA_VAL:-1.0}]: " GAMMA_VAL
 GAMMA_VAL=${GAMMA_VAL:-${LAST_GAMMA_VAL:-1.0}}
+if ! is_number "$GAMMA_VAL"; then
+    GAMMA_VAL="1.0"
+fi
 
 # Brightness Guide
 read -r -p "Enter brightness value (-0.2 to 0.2) [${LAST_BRIGHT_VAL:-0.0}]: " BRIGHT_VAL
 BRIGHT_VAL=${BRIGHT_VAL:-${LAST_BRIGHT_VAL:-0.0}}
+if ! is_number "$BRIGHT_VAL"; then
+    BRIGHT_VAL="0.0"
+fi
 
 # Temperature Guide
 echo "TEMP: 0.0 (Neutral), 0.1 (Warm), -0.1 (Cool)"
@@ -325,21 +340,91 @@ esac
 
 PREVIEW_VFILT="$PREVIEW_VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p10le"
 PREVIEW_VFILT="$PREVIEW_VFILT$(cinematic_filter)"
-PREVIEW_V_FILTER="[0:v]${PREVIEW_VFILT},drawbox=x=${BOX_X}:y=${BOX_Y_EXPR}:w=${BOX_W_MAIN}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X0}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X1}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.54:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X2}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.48:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X3}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.42:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X4}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.36:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X5}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.30:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X6}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.24:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X7}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.18:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X8}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.12:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X9}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.06:t=fill:enable='${BOX_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=black:fontsize=${LINE1_SIZE}:x=${LINE1_X}:y=H-${TEXT_LINE1_BASELINE_OFFSET}:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=black@0.95:fontsize=${LINE2_SIZE}:x=${LINE2_X}:y=H-${TEXT_LINE2_BASELINE_OFFSET}:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
+PREVIEW_V_FILTER_MAIN="[0:v]${PREVIEW_VFILT},drawbox=x=${BOX_X}:y=${BOX_Y_EXPR}:w=${BOX_W_MAIN}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X0}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X1}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.54:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X2}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.48:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X3}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.42:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X4}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.36:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X5}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.30:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X6}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.24:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X7}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.18:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X8}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.12:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X9}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.06:t=fill:enable='${BOX_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=black:fontsize=${LINE1_SIZE}:x=${LINE1_X}:y=H-${TEXT_LINE1_BASELINE_OFFSET}:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=black@0.95:fontsize=${LINE2_SIZE}:x=${LINE2_X}:y=H-${TEXT_LINE2_BASELINE_OFFSET}:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
+PREVIEW_V_FILTER_PLAIN="[0:v]${PREVIEW_VFILT}[vout]"
 PREVIEW_A_FILTER="[1:a]afade=t=in:st=0:d=$FADE_DUR,afade=t=out:st=$PREVIEW_FADE_OUT_ST:d=$FADE_DUR[aout]"
 
-echo "Generating 5-second sample clip..."
-nice -n 20 ffmpeg -hide_banner -loglevel error -y -threads "$THREADS" \
-    -i "$SAMPLE_SOURCE" \
-    -stream_loop -1 -i "$SELECTED_MUSIC" \
-    -filter_complex "$PREVIEW_V_FILTER;$PREVIEW_A_FILTER" \
-    -map "[vout]" -map "[aout]" \
-    -shortest \
-    -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart \
-    -c:a aac -t "$PREVIEW_DUR" \
-    "$OUTPUT_DIR/SAMPLE_PREVIEW.mp4"
+echo "Generating 5-second sample clips..."
+SAMPLE_IDX_1=0
+SAMPLE_IDX_2=$(( NUM_FILES / 4 ))
+SAMPLE_IDX_3=$(( NUM_FILES / 2 ))
+SAMPLE_IDX_4=$(( (NUM_FILES * 3) / 4 ))
+SAMPLE_IDXS=("$SAMPLE_IDX_1" "$SAMPLE_IDX_2" "$SAMPLE_IDX_3" "$SAMPLE_IDX_4")
+SAMPLE_OUTPUTS=()
+USED_SAMPLE_IDXS=()
+SAMPLE_COUNT=0
+for idx in "${SAMPLE_IDXS[@]-}"; do
+    if [[ -z "${idx:-}" || ! "$idx" =~ ^[0-9]+$ ]]; then
+        continue
+    fi
+    if [ "$idx" -ge "$NUM_FILES" ]; then
+        continue
+    fi
+    SKIP=0
+    for used in "${USED_SAMPLE_IDXS[@]-}"; do
+        if [[ -z "${used:-}" || ! "$used" =~ ^[0-9]+$ ]]; then
+            continue
+        fi
+        if [ "$idx" -eq "$used" ]; then
+            SKIP=1
+            break
+        fi
+    done
+    if [ "$SKIP" -eq 1 ]; then
+        continue
+    fi
+    USED_SAMPLE_IDXS+=("$idx")
+    SAMPLE_COUNT=$((SAMPLE_COUNT + 1))
+    SAMPLE_SOURCE="${FILES[$idx]}"
+    SAMPLE_NAME="SAMPLE_PREVIEW_$(printf "%02d" "$SAMPLE_COUNT").mp4"
+    SAMPLE_OUTPUT="$OUTPUT_DIR/$SAMPLE_NAME"
+    SAMPLE_OUTPUTS+=("$SAMPLE_OUTPUT")
+    if [ "$SAMPLE_COUNT" -eq 1 ]; then
+        PREVIEW_V_FILTER="$PREVIEW_V_FILTER_MAIN"
+    else
+        PREVIEW_V_FILTER="$PREVIEW_V_FILTER_PLAIN"
+    fi
 
-echo "✅ Sample created: $OUTPUT_DIR/SAMPLE_PREVIEW.mp4"
+    nice -n 20 ffmpeg -hide_banner -loglevel error -y -threads "$THREADS" \
+        -i "$SAMPLE_SOURCE" \
+        -stream_loop -1 -i "$SELECTED_MUSIC" \
+        -filter_complex "$PREVIEW_V_FILTER;$PREVIEW_A_FILTER" \
+        -map "[vout]" -map "[aout]" \
+        -shortest \
+        -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart \
+        -c:a aac -t "$PREVIEW_DUR" \
+        "$SAMPLE_OUTPUT"
+done
+
+if [ "${#SAMPLE_OUTPUTS[@]}" -gt 1 ]; then
+    SAMPLE_CONCAT_LIST="$TMPDIR/sample_concat.txt"
+    : > "$SAMPLE_CONCAT_LIST"
+    SAMPLE_CONCAT_COUNT=0
+    GRID_INPUTS=()
+    for s in "${SAMPLE_OUTPUTS[@]}"; do
+        if [ -f "$s" ]; then
+            printf "file '%s'\n" "$OUTPUT_DIR_ABS/$(basename "$s")" >> "$SAMPLE_CONCAT_LIST"
+            SAMPLE_CONCAT_COUNT=$((SAMPLE_CONCAT_COUNT + 1))
+            GRID_INPUTS+=("$s")
+        fi
+    done
+
+    if [ "$SAMPLE_CONCAT_COUNT" -eq 4 ]; then
+        SAMPLE_GRID="$OUTPUT_DIR/SAMPLE_PREVIEW_GRID.mp4"
+        ffmpeg -hide_banner -loglevel error -y \
+            -i "${GRID_INPUTS[0]}" -i "${GRID_INPUTS[1]}" -i "${GRID_INPUTS[2]}" -i "${GRID_INPUTS[3]}" \
+            -filter_complex "[0:v][1:v]hstack=inputs=2[top];[2:v][3:v]hstack=inputs=2[bottom];[top][bottom]vstack=inputs=2[v]" \
+            -map "[v]" -shortest \
+            -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart \
+            "$SAMPLE_GRID"
+        echo "✅ Grid sample created: $SAMPLE_GRID"
+    elif [ "$SAMPLE_CONCAT_COUNT" -gt 1 ]; then
+        SAMPLE_ALL="$OUTPUT_DIR/SAMPLE_PREVIEW_ALL.mp4"
+        ffmpeg -hide_banner -loglevel error -f concat -safe 0 -i "$SAMPLE_CONCAT_LIST" \
+            -c copy "$SAMPLE_ALL" -y
+        echo "✅ Combined sample created: $SAMPLE_ALL"
+    fi
+fi
 read -r -p 'Review the sample. Continue to render full video? (y/n): ' CONTINUE_RENDER
 
 if [[ ! "$CONTINUE_RENDER" =~ ^[Yy]$ ]]; then
@@ -417,9 +502,11 @@ ffmpeg -hide_banner -loglevel error -f concat -safe 0 -i "$CONCAT_LIST" \
 
 TOTAL_DUR=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$CONCAT_VIDEO")
 FADE_OUT_ST=$(awk -v d="$TOTAL_DUR" -v f="$FADE_DUR" 'BEGIN {printf "%.2f", d-f}')
+FIRST_CLIP_DUR=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${FILES[0]}")
+TEXT_ENABLE="between(t,0,${FIRST_CLIP_DUR})"
 
 # Build V_FILTER - construct step by step to avoid quoting issues
-V_FILTER="[0:v]drawbox=x=${BOX_X}:y=${BOX_Y_EXPR}:w=${BOX_W_MAIN}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X0}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X1}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.54:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X2}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.48:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X3}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.42:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X4}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.36:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X5}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.30:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X6}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.24:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X7}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.18:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X8}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.12:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X9}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.06:t=fill:enable='${BOX_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=black:fontsize=${LINE1_SIZE}:x=${LINE1_X}:y=H-${TEXT_LINE1_BASELINE_OFFSET}:alpha='${ALPHA}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=black@0.95:fontsize=${LINE2_SIZE}:x=${LINE2_X}:y=H-${TEXT_LINE2_BASELINE_OFFSET}:alpha='${ALPHA}',fade=t=in:st=0:d=0.1[vout]"
+V_FILTER="[0:v]drawbox=x=${BOX_X}:y=${BOX_Y_EXPR}:w=${BOX_W_MAIN}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X0}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.6:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X1}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.54:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X2}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.48:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X3}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.42:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X4}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.36:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X5}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.30:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X6}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.24:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X7}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.18:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X8}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.12:t=fill:enable='${BOX_ENABLE}',drawbox=x=${FADE_X9}:y=${BOX_Y_EXPR}:w=${FADE_STEP}:h=${BOX_H}:color=white@0.06:t=fill:enable='${BOX_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT1}:fontcolor=black:fontsize=${LINE1_SIZE}:x=${LINE1_X}:y=H-${TEXT_LINE1_BASELINE_OFFSET}:alpha='${ALPHA}':enable='${TEXT_ENABLE}',drawtext=fontfile=${FONT_FILE}:text=${ESC_TEXT2}:fontcolor=black@0.95:fontsize=${LINE2_SIZE}:x=${LINE2_X}:y=H-${TEXT_LINE2_BASELINE_OFFSET}:alpha='${ALPHA}':enable='${TEXT_ENABLE}',fade=t=in:st=0:d=0.1[vout]"
 
 A_FILTER="[1:a]afade=t=in:st=0:d=$FADE_DUR,afade=t=out:st=$FADE_OUT_ST:d=$FADE_DUR[aout]"
 
