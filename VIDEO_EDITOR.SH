@@ -149,6 +149,17 @@ FADE_DUR=1.5
 THREADS=4 
 
 # ------------------------------------------------------------
+# Cache setup for preprocessed clips (reused across runs)
+# ------------------------------------------------------------
+CACHE_DIR="./.cache_preprocessed"
+mkdir -p "$CACHE_DIR"
+
+SETTINGS_STR="w=$TARGET_W,h=$TARGET_H,temp=$TEMP_VAL,yellow=$YELLOW_FIX_LEVEL,sat=$SAT_VAL,gamma=$GAMMA_VAL,bright=$BRIGHT_VAL,cinematic=$CINEMATIC_PRESET,fade=$FADE_DUR,bitrate=$BITRATE"
+SETTINGS_HASH=$(printf "%s" "$SETTINGS_STR" | shasum -a 256 | awk '{print $1}')
+SETTINGS_HASH_FILE="$CACHE_DIR/settings.hash"
+printf "%s" "$SETTINGS_HASH" > "$SETTINGS_HASH_FILE"
+
+# ------------------------------------------------------------
 # 3. Gather All Clips (Conditional Assembly)
 # ------------------------------------------------------------
 MAIN_FILES=($(find "$INPUT_DIR" -maxdepth 1 -type f \( -iname "*.mp4" -o -iname "*.mov" \) | LC_ALL=C sort))
@@ -342,7 +353,17 @@ echo -e "\nStep 1/2: Preprocessing $NUM_FILES clips..."
 
 for i in "${!FILES[@]}"; do
     INFILE="${FILES[$i]}"
-    OUTCLIP="$TMPDIR/clip_$(printf "%03d" "$i").mp4"
+    FADE_IN=0
+    FADE_OUT=0
+    if [[ $i -eq 0 ]]; then
+        FADE_IN=1
+    fi
+    if [[ $i -eq $LAST_MAIN_INDEX ]] || [[ $i -eq $((NUM_FILES - 1)) ]]; then
+        FADE_OUT=1
+    fi
+
+    CLIP_KEY=$(printf "%s|%s|%s|%s" "$SETTINGS_HASH" "$INFILE" "$FADE_IN" "$FADE_OUT" | shasum -a 256 | awk '{print $1}')
+    OUTCLIP="$CACHE_DIR/clip_${CLIP_KEY:0:12}.mp4"
     
     PERCENT=$(( (i + 1) * 100 / NUM_FILES ))
     echo -ne "    Processing: [$((i+1))/$NUM_FILES] ($PERCENT%) $(basename "$INFILE")\r"
@@ -364,18 +385,22 @@ for i in "${!FILES[@]}"; do
     VFILT="$VFILT,fps=30,eq=saturation=$SAT_VAL:gamma=$GAMMA_VAL:brightness=$BRIGHT_VAL,format=yuv420p10le"
     VFILT="$VFILT$(cinematic_filter)"
 
-    if [[ $i -eq 0 ]]; then
+    if [[ $FADE_IN -eq 1 ]]; then
         VFILT="$VFILT,fade=t=in:st=0:d=$FADE_DUR"
     fi
-    
-    if [[ $i -eq $LAST_MAIN_INDEX ]] || [[ $i -eq $((NUM_FILES - 1)) ]]; then
+
+    if [[ $FADE_OUT -eq 1 ]]; then
         DUR=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$INFILE")
         ST=$(awk -v d="$DUR" -v f="$FADE_DUR" 'BEGIN {printf "%.2f", d-f}')
         VFILT="$VFILT,fade=t=out:st=$ST:d=$FADE_DUR"
     fi
 
-    nice -n 20 ffmpeg -nostdin -hide_banner -loglevel error -threads "$THREADS" -i "$INFILE" \
-        -an -vf "$VFILT" -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart "$OUTCLIP" -y
+    if [ -f "$OUTCLIP" ] && [ "$OUTCLIP" -nt "$INFILE" ]; then
+        : # Cache hit; reuse existing preprocessed clip.
+    else
+        nice -n 20 ffmpeg -nostdin -hide_banner -loglevel error -threads "$THREADS" -i "$INFILE" \
+            -an -vf "$VFILT" -c:v hevc_videotoolbox -b:v "$BITRATE" -tag:v hvc1 -movflags +faststart "$OUTCLIP" -y
+    fi
     
     printf "file '%s'\n" "$OUTCLIP" >> "$CONCAT_LIST"
     sleep "$PROCESS_DELAY_SEC"
